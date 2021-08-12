@@ -19,8 +19,13 @@ import {
 } from '@babylonjs/core';
 import * as GUI from '@babylonjs/gui';
 import '@babylonjs/loaders';
+import '@babylonjs/core/Debug/debugLayer';
+import '@babylonjs/inspector';
 
-import { Thinnizator } from 'src/library/Thinnizator';
+import {
+  Thinnizator,
+  ThinnizatorPrefabToMeshesList,
+} from 'src/library/Thinnizator';
 
 const nodePrefixesToThinnize = [
   'Cube',
@@ -63,16 +68,15 @@ export class ThinnizatorScene {
   private _engine!: Engine;
   private _gui!: GUI.AdvancedDynamicTexture;
 
+  private _showSpawnPoints = false;
+  private _showPrefabMarkers = false;
+  private _showBadges = false;
+
+  private _thinnizator: Thinnizator;
+
   constructor(private _canvas: HTMLCanvasElement) {
     //
-  }
-
-  setupButton(button: GUI.Button) {
-    button.width = 1;
-    button.height = '40px';
-    button.color = 'white';
-    button.fontSizeInPixels = 12;
-    button.background = '#333';
+    this._thinnizator = new Thinnizator();
   }
 
   async createScene() {
@@ -89,7 +93,7 @@ export class ThinnizatorScene {
       return;
     }
 
-    scene.clearColor = new Color4(1, 0, 0, 1);
+    scene.clearColor = new Color4(0, 0, 0, 1);
     const camera = new ArcRotateCamera(
       'cam1',
       -1.434,
@@ -110,82 +114,6 @@ export class ThinnizatorScene {
       true,
       scene
     );
-
-    const panel = new GUI.StackPanel();
-    panel.width = '100px';
-
-    panel.verticalAlignment = GUI.Control.VERTICAL_ALIGNMENT_TOP;
-    panel.horizontalAlignment = GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
-    this._gui.addControl(panel);
-
-    const btnThinnize = GUI.Button.CreateSimpleButton(
-      'btnThinnize',
-      'thInnIze'
-    );
-    const btnToggleSpawnPoints = GUI.Button.CreateSimpleButton(
-      'btnToggleSpawnPoints',
-      'Toggle spawn points'
-    );
-    const btnTogglePrefabs = GUI.Button.CreateSimpleButton(
-      'btnTogglePrefabs',
-      'Toggle prefabs position'
-    );
-    const btnToggleBadges = GUI.Button.CreateSimpleButton(
-      'btnToggleBadges',
-      'Toggle badges'
-    );
-
-    this.setupButton(btnThinnize);
-    this.setupButton(btnToggleBadges);
-    this.setupButton(btnTogglePrefabs);
-    this.setupButton(btnToggleSpawnPoints);
-
-    // const putPrefabsUnderThisNode = new TransformNode('prefabsParent', scene);
-
-    btnThinnize.onPointerClickObservable.add(() => {
-      const root = scene.transformNodes.find((n) => n.name === 'Building');
-      if (root) {
-        void scene.debugLayer.show({});
-        const thinnizator = new Thinnizator();
-        const thinnables = thinnizator.getThinnables(
-          root,
-          matchNodePrefixesPredicate,
-          scene
-        );
-        console.log(thinnables);
-        // thinnizator.thInnIze(
-        //   root,
-        //   matchNodePrefixesPredicate,
-        //   putPrefabsUnderThisNode,
-        //   this._scene
-        // );
-      }
-      btnThinnize.isEnabled = false;
-    });
-
-    // btnToggleSpawnPoints.onPointerClickObservable.add(() => {
-    //   this._showSpawnPoints = !this._showSpawnPoints;
-    //   this._spawnPoints.forEach((p) => p.setEnabled(this._showSpawnPoints));
-    // });
-
-    // btnTogglePrefabs.onPointerClickObservable.add(() => {
-    //   this._showPrefabMarkers = !this._showPrefabMarkers;
-    //   this._prefabMarkers.forEach((p) => p.setEnabled(this._showPrefabMarkers));
-    // });
-
-    // btnToggleBadges.onPointerClickObservable.add(() => {
-    //   this._showBadges = !this._showBadges;
-    //   if (this._showBadges) {
-    //     this.drawBadges();
-    //   } else {
-    //     this.clearBadges();
-    //   }
-    // });
-
-    panel.addControl(btnThinnize);
-    panel.addControl(btnToggleBadges);
-    panel.addControl(btnTogglePrefabs);
-    panel.addControl(btnToggleSpawnPoints);
 
     const origin = MeshBuilder.CreateBox(
       'zero-zero-zero',
@@ -219,6 +147,82 @@ export class ThinnizatorScene {
     return scene;
   }
 
+  public showInspector() {
+    if (!this._scene) {
+      return;
+    }
+    debugger;
+    void this._scene.debugLayer.show({
+      overlay: true,
+      embedMode: true,
+    });
+  }
+
+  public check() {
+    // TODO: remove
+    const root = this._scene.transformNodes.find((n) => n.name === 'Building');
+    if (root) {
+      const thinnables = this._thinnizator.getThinnables(
+        root,
+        matchNodePrefixesPredicate,
+        this._scene
+      );
+      return thinnables;
+    }
+
+    return new Map<string, ThinnizatorPrefabToMeshesList>();
+  }
+
+  public thinnize(putPrefabsUnderThisNode: TransformNode | string) {
+    if (typeof putPrefabsUnderThisNode === 'string') {
+      putPrefabsUnderThisNode =
+        this._scene.getTransformNodeByName(putPrefabsUnderThisNode) ??
+        new TransformNode(putPrefabsUnderThisNode, this._scene);
+    }
+
+    const root = this._scene.transformNodes.find((n) => n.name === 'Building');
+    if (root) {
+      const thinnizator = new Thinnizator();
+      thinnizator.thInnIze(
+        root,
+        matchNodePrefixesPredicate,
+        putPrefabsUnderThisNode,
+        this._scene
+      );
+    }
+  }
+
+  public toggleSpawnPoints(visible = false) {
+    this._showSpawnPoints = visible || !this._showSpawnPoints;
+    if (this._showSpawnPoints) {
+      this._thinnizator.showSpawnPositions(this._scene);
+    } else {
+      this._thinnizator.hideSpawnPositions(this._scene);
+    }
+  }
+
+  public togglePrefabs(visible = false) {
+    this._showPrefabMarkers = visible || !this._showPrefabMarkers;
+    if (this._showPrefabMarkers) {
+      this._thinnizator.showPrefabMarkers(this._scene);
+    } else {
+      this._thinnizator.hidePrefabMarkers(this._scene);
+    }
+  }
+
+  public toggleBadges() {
+    this._showBadges = !this._showBadges;
+    if (this._showBadges) {
+      this._thinnizator.showBadges(this._gui, this._scene);
+    } else {
+      this._thinnizator.hideBadges(this._gui);
+    }
+  }
+
+  public highliteInstance(name: string) {
+    this._thinnizator.highliteInstance(name, this._gui, this._scene);
+  }
+
   setupFps() {
     const rect1 = new GUI.Rectangle();
     rect1.width = 0.1;
@@ -243,8 +247,8 @@ export class ThinnizatorScene {
   }
 
   setupScene() {
-    this.applyAmbientOcclusion();
-    this.applyGlass();
+    // this.applyAmbientOcclusion();
+    // this.applyGlass();
   }
 
   getFloorNode(floor: string) {

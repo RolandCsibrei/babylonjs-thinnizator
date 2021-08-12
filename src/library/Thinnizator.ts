@@ -1,3 +1,11 @@
+//
+//
+// ThInnIzator
+//
+// Roland Csibrei, NascorTech ltd., 2021
+//
+//
+
 import {
   Color3,
   Mesh,
@@ -11,15 +19,14 @@ import {
 } from '@babylonjs/core';
 import * as GUI from '@babylonjs/gui';
 
-interface ThinnizatorPrefabToMeshesList {
+export interface ThinnizatorPrefabToMeshesList {
   prefab: Mesh;
   meshes: Mesh[];
 }
 
-//  Roland Csibrei, NascorTech ltd., 2021
 export class Thinnizator {
   private _spawnPoints: { name: string; position: Vector3 }[] = [];
-  private _prefabMarkers: { name: string; position: Vector3 }[] = [];
+  public _prefabMarkers: { name: string; position: Vector3 }[] = [];
 
   private _showSpawnPoints = false;
   private _showBadges = false;
@@ -30,16 +37,7 @@ export class Thinnizator {
   private _prefabMarkerColor = new Color3(0.5, 0, 0);
   private _prefabMarkerColorHex = '#f55';
 
-  clearBadges(gui: GUI.AdvancedDynamicTexture) {
-    const controls = gui.getDescendants();
-    controls.forEach((c) => {
-      if (c && c.name && c.name.startsWith('badge-')) {
-        gui.removeControl(c);
-      }
-    });
-  }
-
-  drawBadges(gui: GUI.AdvancedDynamicTexture, scene: Scene) {
+  public showBadges(gui: GUI.AdvancedDynamicTexture, scene: Scene) {
     if (this._showSpawnPoints) {
       this.drawBadgesImpl(
         gui,
@@ -140,51 +138,132 @@ export class Thinnizator {
     });
   }
 
+  public hideBadges(gui: GUI.AdvancedDynamicTexture) {
+    const controls = gui.getDescendants();
+    controls.forEach((c) => {
+      if (c && c.name && c.name.startsWith('badge-')) {
+        gui.removeControl(c);
+      }
+    });
+  }
+
+  public highliteInstance(
+    name: string,
+    gui: GUI.AdvancedDynamicTexture,
+    scene: Scene
+  ) {
+    this.hideBadges(gui);
+    const mesh = scene.getMeshByName(
+      Thinnizator._getSpawnPointNameforMeshName(name)
+    );
+    if (mesh) {
+      const nodes = [
+        {
+          name,
+          position: mesh.getAbsolutePosition().clone(),
+        },
+      ];
+      this.drawBadgesImpl(gui, nodes, this._prefabMarkerColorHex, scene);
+    }
+  }
+
   isPrefab(prefabs: Mesh[], mesh: Mesh) {
     return prefabs.findIndex((p) => p.name === mesh.name) > -1;
   }
 
-  //
-  //
-  //
-  // ThInnIzator
-  //
-  //
-  //
-  showSpawnPositions(scene: Scene) {
-    const markerMaterial = new StandardMaterial('markermat', scene);
-    markerMaterial.diffuseColor = new Color3(1, 0, 0);
-    markerMaterial.alpha = 1;
+  private static _getSpawnPointNameforMeshName(name: string) {
+    return `spawnPoint-${name}`;
+  }
 
-    const greenmaterial = new StandardMaterial('markermatgreen', scene);
-    greenmaterial.diffuseColor = new Color3(0, 1, 0);
+  private static _getPrefabMarkerNameforMeshName(name: string) {
+    return `prefabPosition-${name}`;
+  }
 
-    const spawnPositionsParent = new TransformNode('spawnPositions', scene);
+  showPrefabMarkers(scene: Scene) {
+    if (this._showPrefabMarkers === true) {
+      return;
+    }
+    this._showPrefabMarkers = true;
+
     const prefabMarkersParent = new TransformNode('prefabPositions', scene);
+
+    const prefabMaterial = new StandardMaterial('prefabMaterial', scene);
+    prefabMaterial.diffuseColor = new Color3(1, 0, 0);
+    prefabMaterial.emissiveColor = new Color3(1, 0, 0);
+    prefabMaterial.disableLighting = true;
 
     this._prefabMarkers.forEach((prefab) => {
       const marker = MeshBuilder.CreateBox(
-        `prefabPosition-${prefab.name}`,
+        Thinnizator._getPrefabMarkerNameforMeshName(prefab.name),
         { size: 1 },
         scene
       );
       marker.position = prefab.position;
-      marker.material = markerMaterial;
-      marker.setEnabled(false);
+      marker.material = prefabMaterial;
       marker.parent = prefabMarkersParent;
     });
+  }
+
+  hidePrefabMarkers(scene: Scene) {
+    this._prefabMarkers.forEach((p) => {
+      const mesh = scene.getMeshByName(
+        Thinnizator._getPrefabMarkerNameforMeshName(p.name)
+      );
+      if (mesh) {
+        mesh.dispose();
+      }
+    });
+
+    const prefabMaterial = scene.getMaterialByName('prefabMaterial');
+    prefabMaterial?.dispose();
+
+    this._showPrefabMarkers = false;
+  }
+
+  showSpawnPositions(scene: Scene) {
+    if (this._showSpawnPoints === true) {
+      return;
+    }
+    this._showSpawnPoints = true;
+
+    const spawnPositionsParent = new TransformNode('spawnPositions', scene);
+
+    const spawnPositionMaterial = new StandardMaterial(
+      'spawnPositionMaterial',
+      scene
+    );
+    spawnPositionMaterial.diffuseColor = new Color3(0, 1, 0);
 
     this._spawnPoints.forEach((spawn) => {
       const box = MeshBuilder.CreateBox(
-        `spawnPosition-${spawn.name}`,
+        Thinnizator._getSpawnPointNameforMeshName(spawn.name),
         { size: 1 },
         scene
       );
       box.position = spawn.position;
-      box.material = greenmaterial;
+      box.material = spawnPositionMaterial;
       box.parent = spawnPositionsParent;
-      box.setEnabled(false);
+      box.visibility = 0.2;
+      console.log('Created spawn', box.name);
     });
+  }
+
+  hideSpawnPositions(scene: Scene) {
+    this._spawnPoints.forEach((p) => {
+      const mesh = scene.getMeshByName(
+        Thinnizator._getSpawnPointNameforMeshName(p.name)
+      );
+      if (mesh) {
+        mesh.dispose();
+      }
+    });
+
+    const spawnPositionMaterial = scene.getMaterialByName(
+      'spawnPositionMaterial'
+    );
+    spawnPositionMaterial?.dispose();
+
+    this._showSpawnPoints = false;
   }
 
   thInnIze(
@@ -194,25 +273,12 @@ export class Thinnizator {
     scene: Scene
   ) {
     if (parentNode) {
-      this._prefabMarkers.length = 0;
-      this._spawnPoints.length = 0;
-
       const log: string[] = [];
 
       const thinnableConfig = this.getThinnables(parentNode, predicate, scene);
 
       const toDispose: Mesh[] = [];
       const prefabs: Mesh[] = [];
-      thinnableConfig.forEach((tc) => {
-        const prefab = tc.prefab;
-        prefabs.push(prefab);
-        this._prefabMarkers.push({
-          name: prefab.name,
-          position: prefab.getAbsolutePosition(),
-        });
-      });
-
-      console.log('thinnableConfig', thinnableConfig);
 
       thinnableConfig.forEach((config) => {
         const prefabMesh = config.prefab;
@@ -234,11 +300,6 @@ export class Thinnizator {
 
           const thinPosition = mesh.getAbsolutePosition().clone(); // prefabMesh.position.subtract(mesh.position)
           const thinScale = meshScale;
-
-          this._spawnPoints.push({
-            name: mesh.name,
-            position: thinPosition,
-          });
 
           const rotationVector = meshRotation.toEulerAngles();
           rotationVector.z = 0;
@@ -322,87 +383,107 @@ export class Thinnizator {
     parentNode: TransformNode,
     predicate: (node: Mesh) => boolean,
     scene: Scene
-  ) {
-    {
-      const thinnableConfig = new Map<string, ThinnizatorPrefabToMeshesList>();
+  ): Map<string, ThinnizatorPrefabToMeshesList> {
+    this._prefabMarkers.length = 0;
+    this._spawnPoints.length = 0;
 
-      const childMeshes = parentNode.getChildMeshes();
-      const thinnables: {
-        hash: string;
-        node: string;
-        id: string;
-        materialName: string;
-        meshPrefix: string;
-        primitive: string;
-        primitiveIndexFromName: string;
-        parent: TransformNode | null;
-      }[] = [];
-      childMeshes.forEach((m) => {
-        if (!predicate || predicate(<Mesh>m)) {
-          let hashSuffix = m.material ? m.material.name : '';
-          if (m.parent && m.parent.name !== parentNode.name) {
-            const allMeshes = m.parent.getChildMeshes();
-            hashSuffix = allMeshes
-              .map((m, idx) => {
-                const suffix = m.material ? m.material.name : idx.toString();
-                return suffix;
-              })
-              .join('-');
-          }
+    const thinnableConfig = new Map<string, ThinnizatorPrefabToMeshesList>();
 
-          const node = m.name.split('.')[0];
-          const primitive = m.name.split('_')[1];
-          const hash = `${hashSuffix}-${m.getTotalVertices()}`;
-          m.metadata = { hash };
-          const id = m.id;
-          const materialName = m.material?.name;
-          if (materialName) {
-            const meshPrefix = m.name.split('_')[0];
-            const primitiveIndexFromName = primitive?.substr(-1);
-            thinnables.push({
-              hash,
-              node,
-              id,
-              materialName,
-              meshPrefix,
-              primitive,
-              primitiveIndexFromName,
-              parent: <TransformNode>m.parent,
-            });
-          }
+    const childMeshes = parentNode.getChildMeshes();
+    const thinnables: {
+      hash: string;
+      node: string;
+      id: string;
+      materialName: string;
+      meshPrefix: string;
+      primitive: string;
+      primitiveIndexFromName: string;
+      parent: TransformNode | null;
+    }[] = [];
+    childMeshes.forEach((m) => {
+      if (!predicate || predicate(<Mesh>m)) {
+        let hashSuffix = m.material ? m.material.name : '';
+        if (m.parent && m.parent.name !== parentNode.name) {
+          const allMeshes = m.parent.getChildMeshes();
+          hashSuffix = allMeshes
+            .map((m, idx) => {
+              const suffix = m.material ? m.material.name : idx.toString();
+              return suffix;
+            })
+            .join('-');
         }
-      });
 
-      const uniqueThinnables = thinnables.filter(
-        (p, idx, self) =>
-          self.findIndex((s) => s && p && s.hash === p.hash) === idx
+        const node = m.name.split('.')[0];
+        const primitive = m.name.split('_')[1];
+        const hash = `${hashSuffix}-${m.getTotalVertices()}`;
+        m.metadata = { hash };
+        const id = m.id;
+        const materialName = m.material?.name;
+        if (materialName) {
+          const meshPrefix = m.name.split('_')[0];
+          const primitiveIndexFromName = primitive?.substr(-1);
+          thinnables.push({
+            hash,
+            node,
+            id,
+            materialName,
+            meshPrefix,
+            primitive,
+            primitiveIndexFromName,
+            parent: <TransformNode>m.parent,
+          });
+        }
+      }
+    });
+
+    const uniqueThinnables = thinnables.filter(
+      (p, idx, self) =>
+        self.findIndex((s) => s && p && s.hash === p.hash) === idx
+    );
+
+    uniqueThinnables.forEach((thinnableGroup) => {
+      const meshesForThinnableGroup = scene.meshes.filter(
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        (m) => m.metadata?.hash === thinnableGroup.hash
       );
 
-      uniqueThinnables.forEach((thinnableGroup) => {
-        const meshesForThinnableGroup = scene.meshes.filter(
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-          (m) => m.metadata?.hash === thinnableGroup.hash
+      let prefab;
+
+      // thinnize only when more than
+      const thinnizatorTreshold = 2;
+      if (meshesForThinnableGroup.length >= thinnizatorTreshold) {
+        prefab = meshesForThinnableGroup[0];
+
+        this._prefabMarkers.push({
+          name: prefab.name,
+          position: prefab.getAbsolutePosition(),
+        });
+
+        this._spawnPoints = this._spawnPoints.concat(
+          meshesForThinnableGroup.map((m) => {
+            return {
+              name: m.name,
+              position: m.getAbsolutePosition(),
+            };
+          })
         );
 
-        let prefab;
+        const cfg: ThinnizatorPrefabToMeshesList = {
+          prefab: <Mesh>prefab,
+          meshes: <Mesh[]>meshesForThinnableGroup,
+        };
 
-        // thinnize only when more than
-        const thinnizatorTreshold = 2;
-        if (meshesForThinnableGroup.length >= thinnizatorTreshold) {
-          prefab = meshesForThinnableGroup[0];
+        thinnableConfig.set(thinnableGroup.hash, cfg);
+      }
+    });
 
-          const cfg: ThinnizatorPrefabToMeshesList = {
-            prefab: <Mesh>prefab,
-            meshes: <Mesh[]>meshesForThinnableGroup,
-          };
+    console.log(
+      'thinnableConfig',
+      thinnableConfig,
+      this._prefabMarkers,
+      this._spawnPoints
+    );
 
-          thinnableConfig.set(thinnableGroup.hash, cfg);
-        }
-      });
-
-      console.log('thinnableConfig', thinnableConfig);
-
-      return thinnableConfig;
-    }
+    return thinnableConfig;
   }
 }

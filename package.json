@@ -10,18 +10,18 @@
     "test": "echo \"No test specified\" && exit 0"
   },
   "dependencies": {
-    "@quasar/extras": "^1.0.0",
-    "core-js": "^3.6.5",
-    "quasar": "^2.0.0",
-    "@babylonjs/loaders": "^4.2.0",
     "@babylonjs/core": "^4.2.0",
     "@babylonjs/gui": "^4.2.0",
-    "@babylonjs/inspector": "^4.2.0"
+    "@babylonjs/inspector": "^4.2.0",
+    "@babylonjs/loaders": "^4.2.0",
+    "@quasar/extras": "^1.0.0",
+    "core-js": "^3.6.5",
+    "quasar": "^2.0.0"
   },
   "devDependencies": {
-    "@quasar/extras": "^1.0.0",
     "@babel/eslint-parser": "^7.13.14",
     "@quasar/app": "^3.0.0",
+    "@quasar/extras": "^1.0.0",
     "@types/node": "^10.17.15",
     "@typescript-eslint/eslint-plugin": "^4.16.1",
     "@typescript-eslint/parser": "^4.16.1",
