@@ -5,6 +5,7 @@
   "productName": "BabylonJS thInnIzator",
   "author": "Roland Csibrei <roland.csibrei@nascor.tech>",
   "private": true,
+  "license": "Apache-2.0",
   "scripts": {
     "lint": "eslint --ext .js,.ts,.vue ./",
     "test": "echo \"No test specified\" && exit 0"

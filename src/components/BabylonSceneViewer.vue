@@ -10,6 +10,7 @@
               filled
               label="Select a GLB or GLTF model file or drag one onto the scene"
               accept=".glb, .gltf"
+              max-file-size="80971520"
               @rejected="onRejected"
               @change="loadModel"
             />
@@ -353,10 +354,9 @@ export default {
       loadModel,
       reload,
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       onRejected(rejectedEntries: any) {
         if (Array.isArray(rejectedEntries)) {
-          // Notify plugin needs to be installed
-          //quasar.dev/quasar-plugins/notify#Installation
           https: $q.notify({
             type: 'negative',
             message: `${rejectedEntries.length} file(s) did not pass validation constraints`,

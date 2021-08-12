@@ -427,9 +427,6 @@ export class Thinnizator {
     }[] = [];
 
     childMeshes.forEach((m) => {
-      if (m.name === 'Circle.141') {
-        debugger;
-      }
       if (!predicate || predicate(<Mesh>m)) {
         let hashSuffix = m.material ? m.material.name : '';
         if (
