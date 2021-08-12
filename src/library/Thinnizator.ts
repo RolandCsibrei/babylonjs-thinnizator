@@ -70,20 +70,22 @@ export class Thinnizator {
         [${node.position.x.toFixed(3)}, ${node.position.y.toFixed(
         3
       )}, ${node.position.z.toFixed(3)}]`;
-      const width = '180px';
+      const width = '300px';
       // if (width < 60) width = 60
-      const height = '40px';
-      const cornerRadius = 10;
+      const height = '80px';
+      const cornerRadius = 6;
 
       //
 
       const rect = new GUI.Rectangle();
+      rect.paddingTopInPixels = 10;
       rect.width = width;
       rect.height = height;
       rect.thickness = 0;
       rect.color = color;
       rect.cornerRadius = cornerRadius;
       rect.name = `badge-rect-${node.name}`;
+      rect.verticalAlignment = GUI.Control.VERTICAL_ALIGNMENT_TOP;
       gui.addControl(rect);
 
       const btn = GUI.Button.CreateSimpleButton(
@@ -94,7 +96,7 @@ export class Thinnizator {
       btn.height = height;
       btn.color = '#fff';
       btn.fontFamily = 'arial';
-      btn.fontSizeInPixels = 12;
+      btn.fontSizeInPixels = 14;
       btn.background = color;
       btn.paddingBottomInPixels = 2;
       btn.paddingTopInPixels = 2;
@@ -120,7 +122,7 @@ export class Thinnizator {
 
       rect.addControl(btn);
       const mesh = scene.getMeshByName(node.name);
-      rect.linkWithMesh(mesh);
+      // rect.linkWithMesh(mesh);
       rect.linkOffsetYInPixels = -100;
 
       const line = new GUI.Line();
@@ -131,7 +133,7 @@ export class Thinnizator {
       gui.addControl(line);
       line.linkWithMesh(mesh);
 
-      line.y2 = 20;
+      line.y2 = 40;
       // line.linkOffsetY = -100;
       line.linkOffsetX = 0;
       line.dash = [2, 2];
@@ -155,6 +157,27 @@ export class Thinnizator {
     this.hideBadges(gui);
     const mesh = scene.getMeshByName(
       Thinnizator._getSpawnPointNameforMeshName(name)
+    );
+    if (mesh) {
+      const nodes = [
+        {
+          name,
+          position: mesh.getAbsolutePosition().clone(),
+        },
+      ];
+      this.drawBadgesImpl(gui, nodes, this._spawnPointColorHex, scene);
+    }
+  }
+
+  public highlitePrefab(
+    name: string,
+    gui: GUI.AdvancedDynamicTexture,
+    scene: Scene
+  ) {
+    console.log(name);
+    this.hideBadges(gui);
+    const mesh = scene.getMeshByName(
+      Thinnizator._getPrefabMarkerNameforMeshName(name)
     );
     if (mesh) {
       const nodes = [
@@ -244,7 +267,6 @@ export class Thinnizator {
       box.material = spawnPositionMaterial;
       box.parent = spawnPositionsParent;
       box.visibility = 0.2;
-      console.log('Created spawn', box.name);
     });
   }
 
@@ -273,6 +295,9 @@ export class Thinnizator {
     scene: Scene
   ) {
     if (parentNode) {
+      this.hidePrefabMarkers(scene);
+      this.hideSpawnPositions(scene);
+
       const log: string[] = [];
 
       const thinnableConfig = this.getThinnables(parentNode, predicate, scene);
@@ -317,7 +342,7 @@ export class Thinnizator {
             } scaling ${thinScale.toString()} spawning at ${thinPosition.x}, ${
               thinPosition.y
             }, ${thinPosition.z}
-                     matrix3 (${matrix3.toArray().join(', ')})
+              matrix3 (${matrix3.toArray().join(', ')})
                     `
           );
         }
@@ -400,10 +425,18 @@ export class Thinnizator {
       primitiveIndexFromName: string;
       parent: TransformNode | null;
     }[] = [];
+
     childMeshes.forEach((m) => {
+      if (m.name === 'Circle.141') {
+        debugger;
+      }
       if (!predicate || predicate(<Mesh>m)) {
         let hashSuffix = m.material ? m.material.name : '';
-        if (m.parent && m.parent.name !== parentNode.name) {
+        if (
+          m.getChildMeshes().length > 0 &&
+          m.parent &&
+          m.parent.name !== parentNode.name
+        ) {
           const allMeshes = m.parent.getChildMeshes();
           hashSuffix = allMeshes
             .map((m, idx) => {
@@ -415,7 +448,9 @@ export class Thinnizator {
 
         const node = m.name.split('.')[0];
         const primitive = m.name.split('_')[1];
+        // TODO: make a better hash
         const hash = `${hashSuffix}-${m.getTotalVertices()}`;
+        // TODO: don't use metadata
         m.metadata = { hash };
         const id = m.id;
         const materialName = m.material?.name;

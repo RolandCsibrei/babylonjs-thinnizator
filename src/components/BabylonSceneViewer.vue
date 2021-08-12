@@ -1,103 +1,156 @@
 <template>
   <q-splitter v-model="splitterModel">
     <template v-slot:before>
+      <div class="q-pa-md bg-grey-10">
+        <div class="text-h6 q-mb-md">BabylonJS thInnIzator Playground</div>
+        <div class="q-gutter-sm row">
+          <div class="col">
+            <q-file
+              v-model="filesToLoad"
+              filled
+              label="Select a GLB or GLTF model file or drag one onto the scene"
+              accept=".glb, .gltf"
+              @rejected="onRejected"
+              @change="loadModel"
+            />
+          </div>
+          <div class="col-1 q-mr-sm" v-if="false">
+            <q-btn
+              label="Reload"
+              color="secondary"
+              @click="reload"
+              :disable="true"
+            />
+          </div>
+        </div>
+      </div>
+      <div class="q-pa-md">
+        <div>
+          <q-chip>{{ allMeshesCount }}</q-chip>
+          <q-chip>{{ allVerticesCount }}</q-chip>
+        </div>
+      </div>
       <q-splitter v-model="infoSplitterModel">
         <template v-slot:before>
           <q-list v-if="thinnableItems" class="col" separator>
-            <q-item class="items-center">
-              <q-item-label :lines="1">Prefabs</q-item-label>
-            </q-item>
-            <q-item
-              v-for="(item, idx) in thinnableItems"
-              :key="idx"
-              clickable
-              @click="thinnableSelected = item[0]"
-            >
-              <q-item-section>
-                {{ item[1].prefabName }}
-              </q-item-section>
-              <q-item-section side>
-                {{ item[1].spawnPointsCount }}
-              </q-item-section>
+            <q-item>
+              <q-item-section>Prefabs</q-item-section>
+              <q-item-section side>Thinnized count</q-item-section>
             </q-item>
           </q-list>
+          <q-scroll-area style="height: calc(100vh - 270px)">
+            <q-list v-if="thinnableItems" class="col" separator>
+              <q-item
+                v-for="(item, idx) in thinnableItems"
+                :key="idx"
+                clickable
+                @click="thinnableSelected = item[0]"
+                @mouseenter="highlitePrefab(item[1].prefabName)"
+              >
+                <q-item-section>
+                  <q-item-label>
+                    {{ item[1].prefabName }}
+                  </q-item-label>
+                  <q-item-label caption>
+                    {{ item[0] }}
+                  </q-item-label>
+                </q-item-section>
+                <q-item-section side>
+                  {{ item[1].spawnPointsCount }}
+                </q-item-section>
+              </q-item>
+            </q-list>
+          </q-scroll-area>
         </template>
         <template v-slot:after>
-          <q-list
-            v-if="thinnableItemsForSelectedThinnable"
-            separator
-            class="col"
-          >
-            <q-item class="items-center">
-              <q-item-label>Thin instances</q-item-label>
-            </q-item>
-            <q-item
-              v-for="item in thinnableItemsForSelectedThinnable"
-              :key="item.replacedMeshName"
-              clickable
-              @mouseenter="highliteInstance(item.replacedMeshName)"
-            >
-              <q-item-section>
-                {{ item.replacedMeshName }}
-              </q-item-section>
-              <q-item-section>
-                <div class="row items-center">
-                  <q-chip
-                    color="red-5"
-                    size="sm"
-                    class="col-4 position-info-chip no-margin"
-                    >{{ item.replacedMeshPosition.x }}</q-chip
-                  >
-
-                  <q-chip
-                    color="green"
-                    size="sm"
-                    class="col-4 position-info-chip no-margin"
-                    >{{ item.replacedMeshPosition.y }}</q-chip
-                  >
-                  <q-chip
-                    color="blue"
-                    size="sm"
-                    class="col-4 position-info-chip no-margin"
-                    >{{ item.replacedMeshPosition.z }}</q-chip
-                  >
-                </div>
-              </q-item-section>
+          <q-list separator class="col">
+            <q-item>
+              <q-item-section>Thin instances</q-item-section>
+              <q-item-section side>Position</q-item-section>
             </q-item>
           </q-list>
+          <q-scroll-area style="height: calc(100vh - 320px)">
+            <q-list
+              v-if="thinnableItemsForSelectedThinnable"
+              separator
+              class="col"
+            >
+              <q-item
+                v-for="item in thinnableItemsForSelectedThinnable"
+                :key="item.replacedMeshName"
+                clickable
+                @mouseenter="highliteInstance(item.replacedMeshName)"
+              >
+                <q-item-section>
+                  {{ item.replacedMeshName }}
+                </q-item-section>
+                <q-item-section>
+                  <div class="row items-center">
+                    <q-chip
+                      color="red-5"
+                      size="sm"
+                      class="col-4 position-info-chip no-margin"
+                      >{{ item.replacedMeshPosition.x }}</q-chip
+                    >
+
+                    <q-chip
+                      color="green"
+                      size="sm"
+                      class="col-4 position-info-chip no-margin"
+                      >{{ item.replacedMeshPosition.y }}</q-chip
+                    >
+                    <q-chip
+                      color="blue"
+                      size="sm"
+                      class="col-4 position-info-chip no-margin"
+                      >{{ item.replacedMeshPosition.z }}</q-chip
+                    >
+                  </div>
+                </q-item-section>
+              </q-item>
+            </q-list>
+          </q-scroll-area>
         </template>
       </q-splitter>
     </template>
     <template v-slot:after>
-      <div class="no-scroll overflow-hidden row">
-        <div class="col-12 q-ma-md q-gutter-sm">
-          <q-file
-            v-model="filesToLoad"
-            filled
-            label="Select a GLB or GLTF model file or drag one on the scene"
-            accept=".glb, .gltf"
-            @rejected="onRejected"
-            @change="loadModel"
-          />
+      <div class="no-scroll overflow-hidden row q-mr-md">
+        <div class="col-12 row q-mx-lg q-my-md q-col-gutter-xs">
+          <div>
+            <q-btn label="Check scene" color="positive" @click="checkScene" />
+          </div>
+          <div>
+            <q-btn
+              label="Toggle prefabs"
+              color="primary"
+              @click="togglePrefabs"
+            >
+              <q-badge color="red" floating>{{ prefabsCount }}</q-badge>
+            </q-btn>
+          </div>
+          <div>
+            <q-btn
+              label="Toggle thin instances"
+              color="primary"
+              @click="toggleInstances"
+            >
+              <q-badge color="green" floating>{{ instancesCount }}</q-badge>
+            </q-btn>
+          </div>
+          <q-space />
+          <div>
+            <q-btn label="Thinnize" color="negative" @click="thinnize" />
+          </div>
+          <div class="q-mr-lg">
+            <q-btn
+              label="Show inspector"
+              color="orange"
+              @click="showInspector"
+            />
+          </div>
         </div>
-        <div class="col-12 q-ma-md q-gutter-sm">
-          <q-btn label="Check scene" color="positive" @click="checkScene" />
-          <q-btn label="Toggle badges" color="primary" @click="toggleBadges" />
-          <q-btn
-            label="Toggle prefabs"
-            color="primary"
-            @click="togglePrefabs"
-          />
-          <q-btn
-            label="Toggle thin instances"
-            color="primary"
-            @click="toggleInstances"
-          />
-          <q-btn label="Thinnize" color="negative" @click="thinnize" />
-          <q-btn label="Show inspector" color="orange" @click="showInspector" />
-        </div>
-        <div id="holder" class="col-12 full-height">
-          <canvas ref="bjsCanvas" height="600" />
+        <div id="holder" class="col-12 q-ml-md">
+          <canvas ref="bjsCanvas" style="height: calc(100vh - 100px)" />
         </div>
       </div>
     </template>
@@ -117,6 +170,13 @@ export default {
     const $q = useQuasar();
 
     const filesToLoad = ref<File[]>([]);
+
+    const allMeshesCount = ref('0 vertices');
+    const allVerticesCount = ref('0 meshes');
+
+    const prefabsCount = ref(0);
+    const instancesCount = ref(0);
+
     const splitterModel = ref(40);
     const infoSplitterModel = ref(40);
     const startNodeId = ref('');
@@ -136,6 +196,14 @@ export default {
         scene.createScene();
       }
     });
+
+    const highlitePrefab = (name: string) => {
+      if (!scene) {
+        return;
+      }
+
+      scene.highlitePrefab(name);
+    };
 
     const highliteInstance = (name: string) => {
       if (!scene) {
@@ -203,6 +271,10 @@ export default {
       scene?.showInspector();
     };
 
+    const reload = () => {
+      scene?.reload();
+    };
+
     const loadModel = () => {
       const files = filesToLoad.value;
       const file = Array.isArray(files) && files.length > 0 ? files[0] : files;
@@ -211,9 +283,18 @@ export default {
 
     const checkScene = () => {
       if (scene) {
+        const info = scene.getSceneInfo();
+        allMeshesCount.value = `${info.allMeshesCount} meshes`;
+        allVerticesCount.value = `${info.allVerticesCount} vertices`;
+
         const thinnables = scene.check(null);
         if (thinnablesList) {
           thinnablesList.value = thinnables;
+          prefabsCount.value = thinnables.size;
+          instancesCount.value = Array.from(thinnables.values()).reduce(
+            (sum, t) => (sum += t.meshes.length),
+            0
+          );
           scene.togglePrefabs(true);
           scene.toggleSpawnPoints(true);
         }
@@ -243,11 +324,16 @@ export default {
     };
 
     return {
+      allVerticesCount,
+      allMeshesCount,
+      prefabsCount,
+      instancesCount,
       startNodeId,
       startNodes,
       filesToLoad,
       showInspector,
       highliteInstance,
+      highlitePrefab,
       thinnableItems,
       thinnableSelected,
       thinnableItemsForSelectedThinnable,
@@ -265,14 +351,17 @@ export default {
       filesMaxTotalSize: ref(null),
       filesMaxNumber: ref(null),
       loadModel,
+      reload,
 
       onRejected(rejectedEntries: any) {
-        // Notify plugin needs to be installed
-        // https://quasar.dev/quasar-plugins/notify#Installation
-        // $q.notify({
-        //   type: 'negative',
-        //   message: `${rejectedEntries.length} file(s) did not pass validation constraints`,
-        // });
+        if (Array.isArray(rejectedEntries)) {
+          // Notify plugin needs to be installed
+          //quasar.dev/quasar-plugins/notify#Installation
+          https: $q.notify({
+            type: 'negative',
+            message: `${rejectedEntries.length} file(s) did not pass validation constraints`,
+          });
+        }
       },
     };
   },
@@ -283,5 +372,9 @@ export default {
 .position-info-chip {
   min-width: 60px;
   text-align: center;
+}
+canvas {
+  outline: none;
+  -webkit-tap-highlight-color: rgba(255, 255, 255, 0); /* mobile webkit */
 }
 </style>

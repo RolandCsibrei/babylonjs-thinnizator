@@ -168,7 +168,11 @@ export class ThinnizatorScene {
     camera.setTarget(Vector3.Zero());
     camera.attachControl(this._canvas, true);
 
-    const light = new HemisphericLight('light', new Vector3(0, 1, 0), scene);
+    const light = new HemisphericLight(
+      'light',
+      new Vector3(0, 1, 0),
+      this._scene
+    );
     light.intensity = 1;
     camera.maxZ = 10000;
 
@@ -191,6 +195,8 @@ export class ThinnizatorScene {
     this.setupScene();
     this.setupFps();
 
+    // this.showAxis(20);
+
     engine.runRenderLoop(() => {
       scene.render();
     });
@@ -202,7 +208,6 @@ export class ThinnizatorScene {
     if (!this._scene) {
       return;
     }
-    debugger;
     void this._scene.debugLayer.show({
       overlay: true,
       embedMode: true,
@@ -211,6 +216,10 @@ export class ThinnizatorScene {
 
   public loadModel(file: File) {
     this._loadFromFile(file);
+  }
+
+  public reload() {
+    // this._filesInput.reload();
   }
 
   public check(startNodeId: string | null) {
@@ -237,9 +246,12 @@ export class ThinnizatorScene {
         new TransformNode(putPrefabsUnderThisNode, this._scene);
     }
 
-    const root = this._scene.transformNodes.find((n) => n.name === 'Building');
+    const root = this._scene.transformNodes.find(
+      (n) => n.name === 'Thinnizator'
+    );
     if (root) {
       const thinnizator = new Thinnizator();
+      thinnizator.hideBadges(this._gui);
       thinnizator.thInnIze(
         root,
         matchNodePrefixesPredicate,
@@ -278,6 +290,21 @@ export class ThinnizatorScene {
 
   public highliteInstance(name: string) {
     this._thinnizator.highliteInstance(name, this._gui, this._scene);
+  }
+
+  public highlitePrefab(name: string) {
+    this._thinnizator.highlitePrefab(name, this._gui, this._scene);
+  }
+
+  public getSceneInfo() {
+    const allMeshesCount = this._scene.meshes.length;
+    const allVerticesCount = this._scene
+      .getGeometries()
+      .reduce((sum, g) => (sum += g.getTotalVertices()), 0);
+    return {
+      allMeshesCount,
+      allVerticesCount,
+    };
   }
 
   setupFps() {
