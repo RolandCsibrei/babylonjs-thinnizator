@@ -29,39 +29,20 @@ import {
   ThinnizatorPrefabToMeshesList,
 } from 'src/library/Thinnizator';
 
-const nodePrefixesToThinnize = [
-  'Cube',
-  'Kiosk',
-  'Circle',
-  'Mesh5310',
-  'Vankus',
-  'Tlaciaren',
-  'Tabula',
-  'HP11_3',
-  'Mesh21293',
-  'Mesh21145',
-  'Box35939',
-  'Mys',
-  'Cylinder',
-  'Mesh4121',
-  'Object5467',
-  'Plans',
-  'Stolik maly',
-  'Vstavane skriny typ1',
-  'Stolík maly',
-  'Plane',
-  'Whiteboard_001',
-  'Vstavana skrina typ1',
-];
+// const nodePrefixesToThinnize = [
+// ];
 
-const matchNodePrefixesPredicate = (node: Mesh) => {
-  if (node && node.name) {
-    const matched =
-      nodePrefixesToThinnize.findIndex((p) => node.name.startsWith(p)) > -1;
-    return matched;
-  }
-  return false;
-};
+// const matchNodePrefixesPredicate = (node: Mesh) => {
+//   if (node && node.name) {
+//     const matched =
+//       nodePrefixesToThinnize.findIndex((p) => node.name.startsWith(p)) > -1;
+//     return matched;
+//   }
+//   return false;
+// };
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const matchNodePrefixesPredicate = (node: Mesh) => true;
 
 const BASE_URL = 'https://babylonjs.nascor.tech/boxes/';
 

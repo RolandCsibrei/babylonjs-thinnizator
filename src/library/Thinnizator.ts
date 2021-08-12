@@ -29,12 +29,9 @@ export class Thinnizator {
   public _prefabMarkers: { name: string; position: Vector3 }[] = [];
 
   private _showSpawnPoints = false;
-  private _showBadges = false;
   private _showPrefabMarkers = false;
 
-  private _spawnPointColor = new Color3(0, 1, 0);
   private _spawnPointColorHex = '#595';
-  private _prefabMarkerColor = new Color3(0.5, 0, 0);
   private _prefabMarkerColorHex = '#f55';
 
   public showBadges(gui: GUI.AdvancedDynamicTexture, scene: Scene) {
@@ -71,7 +68,6 @@ export class Thinnizator {
         3
       )}, ${node.position.z.toFixed(3)}]`;
       const width = '300px';
-      // if (width < 60) width = 60
       const height = '80px';
       const cornerRadius = 6;
 
@@ -122,7 +118,6 @@ export class Thinnizator {
 
       rect.addControl(btn);
       const mesh = scene.getMeshByName(node.name);
-      // rect.linkWithMesh(mesh);
       rect.linkOffsetYInPixels = -100;
 
       const line = new GUI.Line();
@@ -134,7 +129,6 @@ export class Thinnizator {
       line.linkWithMesh(mesh);
 
       line.y2 = 40;
-      // line.linkOffsetY = -100;
       line.linkOffsetX = 0;
       line.dash = [2, 2];
     });
@@ -312,7 +306,6 @@ export class Thinnizator {
         const bufferMatrices = new Float32Array(16 * meshes.length);
         for (let i = 0; i < meshes.length; i++) {
           const mesh = meshes[i];
-          // if (isPrefab(prefabs, mesh)) continue
 
           const meshRotation = this.getAbsoluteRotation(mesh).clone();
           toDispose.push(mesh);
@@ -353,13 +346,11 @@ export class Thinnizator {
               bufferMatrices.length / 16
             } times`
           );
-          // prefabMesh.thinInstanceAddSelf()
 
           prefabMesh.setParent(prefabsNode);
           const mat = prefabMesh.material;
           if (mat) {
             prefabMesh.material = mat.clone(`prefabMat-${mat.name}`);
-            // prefabMesh.material.sideOrientation = Material.ClockWiseSideOrientation;
 
             prefabMesh.name = 'prefab-' + prefabMesh.name;
             prefabMesh.setAbsolutePosition(Vector3.Zero());
@@ -375,9 +366,6 @@ export class Thinnizator {
         }
       });
 
-      console.log('toDispose', toDispose.map((m) => m.name).join(', '));
-      console.log('prefabs', prefabs.map((m) => m.name).join(', '));
-
       toDispose.forEach((m) => {
         // do not dispose prefabs
         if (prefabs.findIndex((p) => p.name === m.name) === -1) {
@@ -386,13 +374,7 @@ export class Thinnizator {
         }
       });
 
-      // scene.transformNodes.forEach((n) => {
-      //   if (n.getChildMeshes().length === 0) {
-      //     n.dispose();
-      //   }
-      // });
-
-      console.log('log:', log.join('\r\n'));
+      // console.log('log:', log.join('\r\n'));
     }
   }
 
@@ -508,13 +490,6 @@ export class Thinnizator {
         thinnableConfig.set(thinnableGroup.hash, cfg);
       }
     });
-
-    console.log(
-      'thinnableConfig',
-      thinnableConfig,
-      this._prefabMarkers,
-      this._spawnPoints
-    );
 
     return thinnableConfig;
   }
