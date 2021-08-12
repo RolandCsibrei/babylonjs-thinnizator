@@ -1,15 +1,15 @@
 <template>
   <q-page>
-    <babylon-scene />
+    <babylon-scene-viewer />
   </q-page>
 </template>
 
 <script lang="ts">
-import BabylonScene from 'components/BabylonScene.vue';
+import BabylonSceneViewer from 'src/components/BabylonSceneViewer.vue';
 import { defineComponent } from 'vue';
 
 export default defineComponent({
   name: 'PageIndex',
-  components: { BabylonScene },
+  components: { BabylonSceneViewer },
 });
 </script>

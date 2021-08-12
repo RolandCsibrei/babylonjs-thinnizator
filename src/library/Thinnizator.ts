@@ -70,9 +70,9 @@ export class Thinnizator {
         [${node.position.x.toFixed(3)}, ${node.position.y.toFixed(
         3
       )}, ${node.position.z.toFixed(3)}]`;
-      const width = '160px';
+      const width = '180px';
       // if (width < 60) width = 60
-      const height = '30px';
+      const height = '40px';
       const cornerRadius = 10;
 
       //
@@ -94,12 +94,12 @@ export class Thinnizator {
       btn.height = height;
       btn.color = '#fff';
       btn.fontFamily = 'arial';
-      btn.fontSizeInPixels = 10;
+      btn.fontSizeInPixels = 12;
       btn.background = color;
-      btn.paddingBottomInPixels = 1;
-      btn.paddingTopInPixels = 1;
-      btn.paddingLeftInPixels = 1;
-      btn.paddingRightInPixels = 1;
+      btn.paddingBottomInPixels = 2;
+      btn.paddingTopInPixels = 2;
+      btn.paddingLeftInPixels = 2;
+      btn.paddingRightInPixels = 2;
       btn.cornerRadius = cornerRadius;
       btn.thickness = 0;
 
@@ -121,18 +121,18 @@ export class Thinnizator {
       rect.addControl(btn);
       const mesh = scene.getMeshByName(node.name);
       rect.linkWithMesh(mesh);
-      rect.linkOffsetYInPixels = -90;
+      rect.linkOffsetYInPixels = -100;
 
       const line = new GUI.Line();
-      line.lineWidth = 2;
-      line.color = '#aaa';
-      line.connectedControl = rect;
+      line.connectedControl = btn;
+      line.lineWidth = 4;
+      line.color = '#fff';
       line.name = `badge-line-${node.name}`;
       gui.addControl(line);
       line.linkWithMesh(mesh);
 
-      line.y2 = 100;
-      line.linkOffsetY = -100;
+      line.y2 = 20;
+      // line.linkOffsetY = -100;
       line.linkOffsetX = 0;
       line.dash = [2, 2];
     });

@@ -71,6 +71,16 @@
     <template v-slot:after>
       <div class="no-scroll overflow-hidden row">
         <div class="col-12 q-ma-md q-gutter-sm">
+          <q-file
+            v-model="filesToLoad"
+            filled
+            label="Select a GLB or GLTF model file or drag one on the scene"
+            accept=".glb, .gltf"
+            @rejected="onRejected"
+            @change="loadModel"
+          />
+        </div>
+        <div class="col-12 q-ma-md q-gutter-sm">
           <q-btn label="Check scene" color="positive" @click="checkScene" />
           <q-btn label="Toggle badges" color="primary" @click="toggleBadges" />
           <q-btn
@@ -99,17 +109,22 @@ import { ref, onMounted, computed } from '@vue/runtime-core';
 import { ThinnizatorScene } from '../scenes/ThinnizatorScene';
 import { ThinnizatorPrefabToMeshesList } from 'src/library/Thinnizator';
 import { Vector3 } from '@babylonjs/core';
+import { useQuasar } from 'quasar';
 
 export default {
   name: 'BabylonScene',
   setup() {
+    const $q = useQuasar();
+
+    const filesToLoad = ref<File[]>([]);
     const splitterModel = ref(40);
     const infoSplitterModel = ref(40);
-
+    const startNodeId = ref('');
+    const startNodes = ref<{ name: string; id: string }[]>([]);
     const bjsCanvas = ref<HTMLCanvasElement | null>(null);
     let scene: ThinnizatorScene | undefined;
 
-    onMounted(async () => {
+    onMounted(() => {
       const canvas = bjsCanvas.value;
       if (canvas) {
         const holder = document.getElementById('holder');
@@ -118,7 +133,7 @@ export default {
           canvas.height = holder.clientHeight;
         }
         scene = new ThinnizatorScene(canvas);
-        await scene.createScene();
+        scene.createScene();
       }
     });
 
@@ -187,9 +202,16 @@ export default {
     const showInspector = () => {
       scene?.showInspector();
     };
+
+    const loadModel = () => {
+      const files = filesToLoad.value;
+      const file = Array.isArray(files) && files.length > 0 ? files[0] : files;
+      scene?.loadModel(<File>file);
+    };
+
     const checkScene = () => {
       if (scene) {
-        const thinnables = scene.check();
+        const thinnables = scene.check(null);
         if (thinnablesList) {
           thinnablesList.value = thinnables;
           scene.togglePrefabs(true);
@@ -221,6 +243,9 @@ export default {
     };
 
     return {
+      startNodeId,
+      startNodes,
+      filesToLoad,
       showInspector,
       highliteInstance,
       thinnableItems,
@@ -235,6 +260,20 @@ export default {
       infoSplitterModel,
       bjsCanvas,
       thinnablesList,
+      filesImages: ref(null),
+      filesMaxSize: ref(null),
+      filesMaxTotalSize: ref(null),
+      filesMaxNumber: ref(null),
+      loadModel,
+
+      onRejected(rejectedEntries: any) {
+        // Notify plugin needs to be installed
+        // https://quasar.dev/quasar-plugins/notify#Installation
+        // $q.notify({
+        //   type: 'negative',
+        //   message: `${rejectedEntries.length} file(s) did not pass validation constraints`,
+        // });
+      },
     };
   },
 };

@@ -16,6 +16,8 @@ import {
   Material,
   SceneLoader,
   Color4,
+  FilesInput,
+  Tools,
 } from '@babylonjs/core';
 import * as GUI from '@babylonjs/gui';
 import '@babylonjs/loaders';
@@ -66,7 +68,9 @@ const BASE_URL = 'https://babylonjs.nascor.tech/boxes/';
 export class ThinnizatorScene {
   private _scene!: Scene;
   private _engine!: Engine;
+  private _camera!: ArcRotateCamera;
   private _gui!: GUI.AdvancedDynamicTexture;
+  private _filesInput!: FilesInput;
 
   private _showSpawnPoints = false;
   private _showPrefabMarkers = false;
@@ -77,9 +81,67 @@ export class ThinnizatorScene {
   constructor(private _canvas: HTMLCanvasElement) {
     //
     this._thinnizator = new Thinnizator();
+    this.createFileInput();
   }
 
-  async createScene() {
+  createFileInput() {
+    this._filesInput = new FilesInput(
+      this._engine,
+      null,
+      null,
+      null,
+      null,
+      null,
+      function () {
+        Tools.ClearLogCache();
+      },
+      function () {
+        //
+      },
+      null
+    );
+    this._filesInput.onProcessFileCallback = (
+      file: File,
+      name: string,
+      extension: string
+    ) => {
+      if (
+        extension.toLowerCase() === 'glb' ||
+        extension.toLowerCase() === 'gltf'
+      ) {
+        this._scene.dispose();
+        this.createScene();
+        const file = this._filesInput.filesToLoad[0];
+        this._loadFromFile(file);
+        return true;
+      } else {
+        return false;
+      }
+    };
+    this._filesInput.monitorElementForDragNDrop(this._canvas);
+  }
+
+  private _loadFromFile(file: File) {
+    SceneLoader.Append('file:', file, this._scene, (loaded) => {
+      // TODO: to const
+      const newRootNode = new TransformNode('Thinnizator', this._scene);
+      const root = loaded.meshes.find((m) => m.name === '__root__');
+      if (root) {
+        const ch = root.getChildTransformNodes()[0];
+        const sizes = ch.getHierarchyBoundingVectors();
+        const size = {
+          x: sizes.max.x - sizes.min.x,
+          y: sizes.max.y - sizes.min.y,
+          z: sizes.max.z - sizes.min.z,
+        };
+        this._camera.radius = Math.max(Math.max(size.x, size.y), size.z) * 1.2;
+        ch.setParent(newRootNode);
+        root.dispose();
+      }
+    });
+  }
+
+  createScene() {
     const engine = new Engine(this._canvas);
     this._engine = engine;
     if (!this._engine) {
@@ -102,6 +164,7 @@ export class ThinnizatorScene {
       new Vector3(0, 20, 0),
       scene
     );
+    this._camera = camera;
     camera.setTarget(Vector3.Zero());
     camera.attachControl(this._canvas, true);
 
@@ -125,18 +188,6 @@ export class ThinnizatorScene {
     originMaterial.diffuseColor = originColor;
     origin.material = originMaterial;
 
-    const buildingNode = new TransformNode('Building', this._scene);
-
-    const loaded = await SceneLoader.ImportMeshAsync(
-      '',
-      BASE_URL,
-      'floor.glb',
-      scene
-    );
-    const root = loaded.meshes[0];
-    const floorNode = root.getChildTransformNodes()[0];
-    floorNode.setParent(buildingNode);
-    root.dispose();
     this.setupScene();
     this.setupFps();
 
@@ -158,9 +209,15 @@ export class ThinnizatorScene {
     });
   }
 
-  public check() {
-    // TODO: remove
-    const root = this._scene.transformNodes.find((n) => n.name === 'Building');
+  public loadModel(file: File) {
+    this._loadFromFile(file);
+  }
+
+  public check(startNodeId: string | null) {
+    // TODO: switch to id
+    // const root = this._scene.transformNodes.find((n) => n.id === startNodeId);
+    startNodeId = startNodeId ?? 'Thinnizator';
+    const root = this._scene.transformNodes.find((n) => n.name === startNodeId);
     if (root) {
       const thinnables = this._thinnizator.getThinnables(
         root,
