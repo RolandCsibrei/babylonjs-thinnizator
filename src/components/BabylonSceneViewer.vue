@@ -101,6 +101,19 @@
             </q-btn>
           </div>
           <q-space />
+
+          <q-btn-toggle
+            v-model="viewMode"
+            push
+            glossy
+            toggle-color="grey-8"
+            :options="[
+              { label: 'Normal', value: 'normal' },
+              { label: 'Analyzer', value: 'analyzer' },
+            ]"
+            @click="toggleAnalyzerView"
+          />
+          <q-space />
           <div>
             <q-btn label="Thinnize" color="negative" @click="thinnize" />
           </div>
@@ -136,6 +149,7 @@ export default {
     const prefabsCount = ref(0);
     const instancesCount = ref(0);
 
+    const viewMode = ref('normal');
     const splitterModel = ref(40);
     const infoSplitterModel = ref(40);
     const startNodeId = ref('');
@@ -281,8 +295,14 @@ export default {
         scene.toggleSpawnPoints();
       }
     };
+    const toggleAnalyzerView = () => {
+      if (scene) {
+        scene.toggleAnalyzerView(viewMode.value);
+      }
+    };
 
     return {
+      toggleAnalyzerView,
       allVerticesCount,
       allMeshesCount,
       prefabsCount,
@@ -312,6 +332,7 @@ export default {
       loadModel,
       loadDemo,
       reload,
+      viewMode,
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       onRejected(rejectedEntries: any) {

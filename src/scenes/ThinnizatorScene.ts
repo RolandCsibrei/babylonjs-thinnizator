@@ -54,6 +54,7 @@ export class ThinnizatorScene {
   private _showSpawnPoints = false;
   private _showPrefabMarkers = false;
   private _showBadges = false;
+  private _viewMode = 'normal';
   private _previewPrefab: Mesh | null = null;
 
   private _thinnizator: Thinnizator;
@@ -240,16 +241,16 @@ export class ThinnizatorScene {
     }
   }
 
-  public pointView() {
+  private _pointView() {
     this._scene.meshes.forEach((m) => {
       if (m.material) {
         m.material.pointsCloud = true;
-        m.material.pointSize = 2;
+        m.material.pointSize = 1;
       }
     });
   }
 
-  public normalView() {
+  private _normalView() {
     this._scene.meshes.forEach((m) => {
       if (m.material) {
         m.material.pointsCloud = false;
@@ -298,6 +299,15 @@ export class ThinnizatorScene {
 
     mesh.rotation = camera.rotation;
     mesh.position = Vector3.TransformCoordinates(p, invertCameraViewProj);
+  }
+
+  public toggleAnalyzerView(viewMode = 'normal') {
+    this._viewMode = viewMode;
+    if (this._viewMode === 'analyzer') {
+      this._pointView();
+    } else {
+      this._normalView();
+    }
   }
 
   public toggleSpawnPoints(visible = false) {
