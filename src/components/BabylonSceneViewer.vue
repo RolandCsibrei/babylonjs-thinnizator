@@ -15,13 +15,8 @@
               @change="loadModel"
             />
           </div>
-          <div class="col-1 q-mr-sm" v-if="false">
-            <q-btn
-              label="Reload"
-              color="secondary"
-              @click="reload"
-              :disable="true"
-            />
+          <div class="col-1 q-mr-sm">
+            <q-btn label="Load demo" color="orange" @click="loadDemo" />
           </div>
         </div>
       </div>
@@ -41,13 +36,7 @@
           </q-list>
           <q-scroll-area style="height: calc(100vh - 270px)">
             <q-list v-if="thinnableItems" class="col" separator>
-              <q-item
-                v-for="(item, idx) in thinnableItems"
-                :key="idx"
-                clickable
-                @click="thinnableSelected = item[0]"
-                @mouseenter="highlitePrefab(item[1].prefabName)"
-              >
+              <q-item v-for="(item, idx) in thinnableItems" :key="idx" clickable @click="thinnableSelected = item[0]" @mouseenter="highlitePrefab(item[1].parentName)">
                 <q-item-section>
                   <q-item-label>
                     {{ item[1].prefabName }}
@@ -71,41 +60,17 @@
             </q-item>
           </q-list>
           <q-scroll-area style="height: calc(100vh - 320px)">
-            <q-list
-              v-if="thinnableItemsForSelectedThinnable"
-              separator
-              class="col"
-            >
-              <q-item
-                v-for="item in thinnableItemsForSelectedThinnable"
-                :key="item.replacedMeshName"
-                clickable
-                @mouseenter="highliteInstance(item.replacedMeshName)"
-              >
+            <q-list v-if="thinnableItemsForSelectedThinnable" separator class="col">
+              <q-item v-for="item in thinnableItemsForSelectedThinnable" :key="item.replacedMeshName" clickable @mouseenter="highliteInstance(item.replacedMeshName)">
                 <q-item-section>
                   {{ item.replacedMeshName }}
                 </q-item-section>
                 <q-item-section>
                   <div class="row items-center">
-                    <q-chip
-                      color="red-5"
-                      size="sm"
-                      class="col-4 position-info-chip no-margin"
-                      >{{ item.replacedMeshPosition.x }}</q-chip
-                    >
+                    <q-chip color="red-5" size="sm" class="col-4 position-info-chip no-margin">{{ item.replacedMeshPosition.x }}</q-chip>
 
-                    <q-chip
-                      color="green"
-                      size="sm"
-                      class="col-4 position-info-chip no-margin"
-                      >{{ item.replacedMeshPosition.y }}</q-chip
-                    >
-                    <q-chip
-                      color="blue"
-                      size="sm"
-                      class="col-4 position-info-chip no-margin"
-                      >{{ item.replacedMeshPosition.z }}</q-chip
-                    >
+                    <q-chip color="green" size="sm" class="col-4 position-info-chip no-margin">{{ item.replacedMeshPosition.y }}</q-chip>
+                    <q-chip color="blue" size="sm" class="col-4 position-info-chip no-margin">{{ item.replacedMeshPosition.z }}</q-chip>
                   </div>
                 </q-item-section>
               </q-item>
@@ -121,20 +86,12 @@
             <q-btn label="Check scene" color="positive" @click="checkScene" />
           </div>
           <div>
-            <q-btn
-              label="Toggle prefabs"
-              color="primary"
-              @click="togglePrefabs"
-            >
+            <q-btn label="Toggle prefabs" color="primary" @click="togglePrefabs">
               <q-badge color="red" floating>{{ prefabsCount }}</q-badge>
             </q-btn>
           </div>
           <div>
-            <q-btn
-              label="Toggle thin instances"
-              color="primary"
-              @click="toggleInstances"
-            >
+            <q-btn label="Toggle thin instances" color="primary" @click="toggleInstances">
               <q-badge color="green" floating>{{ instancesCount }}</q-badge>
             </q-btn>
           </div>
@@ -143,11 +100,7 @@
             <q-btn label="Thinnize" color="negative" @click="thinnize" />
           </div>
           <div class="q-mr-lg">
-            <q-btn
-              label="Show inspector"
-              color="orange"
-              @click="showInspector"
-            />
+            <q-btn label="Show inspector" color="orange" @click="showInspector" />
           </div>
         </div>
         <div id="holder" class="col-12 q-ml-md">
@@ -215,10 +168,7 @@ export default {
     };
 
     const thinnableSelected = ref('');
-    const thinnablesList = ref<Map<
-      string,
-      ThinnizatorPrefabToMeshesList
-    > | null>(null);
+    const thinnablesList = ref<Map<string, ThinnizatorPrefabToMeshesList> | null>(null);
 
     const thinnableItemsForSelectedThinnable = computed(() => {
       let ti: {
@@ -252,6 +202,7 @@ export default {
         string,
         {
           prefabName: string;
+          parentName?: string;
           // material: string,
           prefabPosition: Vector3;
           spawnPointsCount: number;
@@ -260,6 +211,7 @@ export default {
 
       thinnablesList.value?.forEach((value, key) => {
         ti.set(key, {
+          parentName: value.prefab.parent?.name,
           prefabName: value.prefab.name,
           prefabPosition: value.prefab.getAbsolutePosition(),
           spawnPointsCount: value.meshes.length,
@@ -282,6 +234,10 @@ export default {
       scene?.loadModel(<File>file);
     };
 
+    const loadDemo = () => {
+      scene?.loadDemo();
+    };
+
     const checkScene = () => {
       if (scene) {
         const info = scene.getSceneInfo();
@@ -292,10 +248,7 @@ export default {
         if (thinnablesList) {
           thinnablesList.value = thinnables;
           prefabsCount.value = thinnables.size;
-          instancesCount.value = Array.from(thinnables.values()).reduce(
-            (sum, t) => (sum += t.meshes.length),
-            0
-          );
+          instancesCount.value = Array.from(thinnables.values()).reduce((sum, t) => (sum += t.meshes.length), 0);
           scene.togglePrefabs(true);
           scene.toggleSpawnPoints(true);
         }
@@ -352,6 +305,7 @@ export default {
       filesMaxTotalSize: ref(null),
       filesMaxNumber: ref(null),
       loadModel,
+      loadDemo,
       reload,
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

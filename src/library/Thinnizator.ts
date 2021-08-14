@@ -5,18 +5,9 @@
 // Roland Csibrei, NascorTech ltd., 2021
 //
 //
-
-import {
-  Color3,
-  Mesh,
-  MeshBuilder,
-  StandardMaterial,
-  TransformNode,
-  Vector3,
-  Scene,
-  Matrix,
-  Quaternion,
-} from '@babylonjs/core';
+// TODO: Make methods async
+// TODO: move debugging related code to another class
+import { Color3, Mesh, MeshBuilder, StandardMaterial, TransformNode, Vector3, Scene, Matrix, Quaternion } from '@babylonjs/core';
 import * as GUI from '@babylonjs/gui';
 
 export interface ThinnizatorPrefabToMeshesList {
@@ -36,37 +27,18 @@ export class Thinnizator {
 
   public showBadges(gui: GUI.AdvancedDynamicTexture, scene: Scene) {
     if (this._showSpawnPoints) {
-      this.drawBadgesImpl(
-        gui,
-        this._spawnPoints,
-        this._spawnPointColorHex,
-        scene
-      );
+      this.drawBadgesImpl(gui, this._spawnPoints, this._spawnPointColorHex, scene);
     }
 
     if (this._showPrefabMarkers) {
-      this.drawBadgesImpl(
-        gui,
-        this._prefabMarkers,
-        this._prefabMarkerColorHex,
-        scene
-      );
+      this.drawBadgesImpl(gui, this._prefabMarkers, this._prefabMarkerColorHex, scene);
     }
   }
 
-  drawBadgesImpl(
-    gui: GUI.AdvancedDynamicTexture,
-    nodes: { name: string; position: Vector3 }[],
-    color: string,
-    scene: Scene
-  ) {
+  drawBadgesImpl(gui: GUI.AdvancedDynamicTexture, nodes: { name: string; position: Vector3 }[], color: string, scene: Scene) {
     nodes.forEach((node) => {
-      const label = `${node.name
-        .replace('prefabPosition-', '')
-        .replace('spawnPosition-', '')}
-        [${node.position.x.toFixed(3)}, ${node.position.y.toFixed(
-        3
-      )}, ${node.position.z.toFixed(3)}]`;
+      const label = `${node.name.replace('prefabPosition-', '').replace('spawnPosition-', '')}
+        [${node.position.x.toFixed(3)}, ${node.position.y.toFixed(3)}, ${node.position.z.toFixed(3)}]`;
       const width = '300px';
       const height = '80px';
       const cornerRadius = 6;
@@ -84,10 +56,7 @@ export class Thinnizator {
       rect.verticalAlignment = GUI.Control.VERTICAL_ALIGNMENT_TOP;
       gui.addControl(rect);
 
-      const btn = GUI.Button.CreateSimpleButton(
-        `badge-btn-${node.name}`,
-        label
-      );
+      const btn = GUI.Button.CreateSimpleButton(`badge-btn-${node.name}`, label);
       btn.width = width;
       btn.height = height;
       btn.color = '#fff';
@@ -143,15 +112,9 @@ export class Thinnizator {
     });
   }
 
-  public highliteInstance(
-    name: string,
-    gui: GUI.AdvancedDynamicTexture,
-    scene: Scene
-  ) {
+  public highliteInstance(name: string, gui: GUI.AdvancedDynamicTexture, scene: Scene) {
     this.hideBadges(gui);
-    const mesh = scene.getMeshByName(
-      Thinnizator._getSpawnPointNameforMeshName(name)
-    );
+    const mesh = scene.getMeshByName(Thinnizator._getSpawnPointNameforMeshName(name));
     if (mesh) {
       const nodes = [
         {
@@ -163,16 +126,10 @@ export class Thinnizator {
     }
   }
 
-  public highlitePrefab(
-    name: string,
-    gui: GUI.AdvancedDynamicTexture,
-    scene: Scene
-  ) {
+  public highlitePrefab(name: string, gui: GUI.AdvancedDynamicTexture, scene: Scene) {
     console.log(name);
     this.hideBadges(gui);
-    const mesh = scene.getMeshByName(
-      Thinnizator._getPrefabMarkerNameforMeshName(name)
-    );
+    const mesh = scene.getMeshByName(Thinnizator._getPrefabMarkerNameforMeshName(name));
     if (mesh) {
       const nodes = [
         {
@@ -186,6 +143,11 @@ export class Thinnizator {
 
   isPrefab(prefabs: Mesh[], mesh: Mesh) {
     return prefabs.findIndex((p) => p.name === mesh.name) > -1;
+  }
+
+  public static getPrefab(meshName: string, scene: Scene) {
+    const name = Thinnizator._getPrefabMarkerNameforMeshName(meshName);
+    return scene.getMeshByName(name);
   }
 
   private static _getSpawnPointNameforMeshName(name: string) {
@@ -210,11 +172,7 @@ export class Thinnizator {
     prefabMaterial.disableLighting = true;
 
     this._prefabMarkers.forEach((prefab) => {
-      const marker = MeshBuilder.CreateBox(
-        Thinnizator._getPrefabMarkerNameforMeshName(prefab.name),
-        { size: 1 },
-        scene
-      );
+      const marker = MeshBuilder.CreateBox(Thinnizator._getPrefabMarkerNameforMeshName(prefab.name), { size: 1 }, scene);
       marker.position = prefab.position;
       marker.material = prefabMaterial;
       marker.parent = prefabMarkersParent;
@@ -223,9 +181,7 @@ export class Thinnizator {
 
   hidePrefabMarkers(scene: Scene) {
     this._prefabMarkers.forEach((p) => {
-      const mesh = scene.getMeshByName(
-        Thinnizator._getPrefabMarkerNameforMeshName(p.name)
-      );
+      const mesh = scene.getMeshByName(Thinnizator._getPrefabMarkerNameforMeshName(p.name));
       if (mesh) {
         mesh.dispose();
       }
@@ -245,18 +201,11 @@ export class Thinnizator {
 
     const spawnPositionsParent = new TransformNode('spawnPositions', scene);
 
-    const spawnPositionMaterial = new StandardMaterial(
-      'spawnPositionMaterial',
-      scene
-    );
+    const spawnPositionMaterial = new StandardMaterial('spawnPositionMaterial', scene);
     spawnPositionMaterial.diffuseColor = new Color3(0, 1, 0);
 
     this._spawnPoints.forEach((spawn) => {
-      const box = MeshBuilder.CreateBox(
-        Thinnizator._getSpawnPointNameforMeshName(spawn.name),
-        { size: 1 },
-        scene
-      );
+      const box = MeshBuilder.CreateBox(Thinnizator._getSpawnPointNameforMeshName(spawn.name), { size: 1 }, scene);
       box.position = spawn.position;
       box.material = spawnPositionMaterial;
       box.parent = spawnPositionsParent;
@@ -266,28 +215,19 @@ export class Thinnizator {
 
   hideSpawnPositions(scene: Scene) {
     this._spawnPoints.forEach((p) => {
-      const mesh = scene.getMeshByName(
-        Thinnizator._getSpawnPointNameforMeshName(p.name)
-      );
+      const mesh = scene.getMeshByName(Thinnizator._getSpawnPointNameforMeshName(p.name));
       if (mesh) {
         mesh.dispose();
       }
     });
 
-    const spawnPositionMaterial = scene.getMaterialByName(
-      'spawnPositionMaterial'
-    );
+    const spawnPositionMaterial = scene.getMaterialByName('spawnPositionMaterial');
     spawnPositionMaterial?.dispose();
 
     this._showSpawnPoints = false;
   }
 
-  thInnIze(
-    parentNode: TransformNode,
-    predicate: (mesh: Mesh) => boolean,
-    prefabsNode: TransformNode,
-    scene: Scene
-  ) {
+  thInnIze(parentNode: TransformNode, predicate: (mesh: Mesh) => boolean, prefabsNode: TransformNode, scene: Scene) {
     if (parentNode) {
       this.hidePrefabMarkers(scene);
       this.hideSpawnPositions(scene);
@@ -310,11 +250,7 @@ export class Thinnizator {
           const meshRotation = this.getAbsoluteRotation(mesh).clone();
           toDispose.push(mesh);
 
-          const meshScale = mesh.parent
-            ? (<Mesh>mesh.parent)?.scaling
-            : mesh.scaling
-            ? mesh.scaling
-            : new Vector3(1, 1, 1);
+          const meshScale = mesh.parent ? (<Mesh>mesh.parent)?.scaling : mesh.scaling ? mesh.scaling : new Vector3(1, 1, 1);
 
           const thinPosition = mesh.getAbsolutePosition().clone(); // prefabMesh.position.subtract(mesh.position)
           const thinScale = meshScale;
@@ -322,17 +258,11 @@ export class Thinnizator {
           const rotationVector = meshRotation.toEulerAngles();
           rotationVector.z = 0;
 
-          const matrix3 = Matrix.Compose(
-            thinScale,
-            rotationVector.toQuaternion(),
-            thinPosition
-          );
+          const matrix3 = Matrix.Compose(thinScale, rotationVector.toQuaternion(), thinPosition);
           matrix3.copyToArray(bufferMatrices, i * 16);
 
           log.push(
-            `MATRIX3: ${mesh.name} using prefab ${prefabMesh.name} material ${
-              prefabMesh.material?.name ?? 'n/a'
-            } scaling ${thinScale.toString()} spawning at ${thinPosition.x}, ${
+            `MATRIX3: ${mesh.name} using prefab ${prefabMesh.name} material ${prefabMesh.material?.name ?? 'n/a'} scaling ${thinScale.toString()} spawning at ${thinPosition.x}, ${
               thinPosition.y
             }, ${thinPosition.z}
               matrix3 (${matrix3.toArray().join(', ')})
@@ -341,11 +271,7 @@ export class Thinnizator {
         }
 
         if (prefabMesh && prefabMesh.thinInstanceSetBuffer) {
-          log.push(
-            `THINNING prefab ${prefabMesh.name} ${
-              bufferMatrices.length / 16
-            } times`
-          );
+          log.push(`THINNING prefab ${prefabMesh.name} ${bufferMatrices.length / 16} times`);
 
           prefabMesh.setParent(prefabsNode);
           const mat = prefabMesh.material;
@@ -356,12 +282,7 @@ export class Thinnizator {
             prefabMesh.setAbsolutePosition(Vector3.Zero());
             prefabMesh.rotation = Vector3.Zero();
             prefabMesh.scaling = Vector3.One();
-            prefabMesh.thinInstanceSetBuffer(
-              'matrix',
-              bufferMatrices,
-              16,
-              false
-            );
+            prefabMesh.thinInstanceSetBuffer('matrix', bufferMatrices, 16, false);
           }
         }
       });
@@ -386,11 +307,7 @@ export class Thinnizator {
     return rotation;
   }
 
-  getThinnables(
-    parentNode: TransformNode,
-    predicate: (node: Mesh) => boolean,
-    scene: Scene
-  ): Map<string, ThinnizatorPrefabToMeshesList> {
+  getThinnables(parentNode: TransformNode, predicate: (node: Mesh) => boolean, scene: Scene): Map<string, ThinnizatorPrefabToMeshesList> {
     this._prefabMarkers.length = 0;
     this._spawnPoints.length = 0;
 
@@ -411,11 +328,7 @@ export class Thinnizator {
     childMeshes.forEach((m) => {
       if (!predicate || predicate(<Mesh>m)) {
         let hashSuffix = m.material ? m.material.name : '';
-        if (
-          m.getChildMeshes().length > 0 &&
-          m.parent &&
-          m.parent.name !== parentNode.name
-        ) {
+        if (m.getChildMeshes().length > 0 && m.parent && m.parent.name !== parentNode.name) {
           const allMeshes = m.parent.getChildMeshes();
           hashSuffix = allMeshes
             .map((m, idx) => {
@@ -450,10 +363,7 @@ export class Thinnizator {
       }
     });
 
-    const uniqueThinnables = thinnables.filter(
-      (p, idx, self) =>
-        self.findIndex((s) => s && p && s.hash === p.hash) === idx
-    );
+    const uniqueThinnables = thinnables.filter((p, idx, self) => self.findIndex((s) => s && p && s.hash === p.hash) === idx);
 
     uniqueThinnables.forEach((thinnableGroup) => {
       const meshesForThinnableGroup = scene.meshes.filter(
