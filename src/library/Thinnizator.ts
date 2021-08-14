@@ -127,7 +127,6 @@ export class Thinnizator {
   }
 
   public highlitePrefab(name: string, gui: GUI.AdvancedDynamicTexture, scene: Scene) {
-    console.log(name);
     this.hideBadges(gui);
     const mesh = scene.getMeshByName(Thinnizator._getPrefabMarkerNameforMeshName(name));
     if (mesh) {

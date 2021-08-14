@@ -61,7 +61,12 @@
           </q-list>
           <q-scroll-area style="height: calc(100vh - 320px)">
             <q-list v-if="thinnableItemsForSelectedThinnable" separator class="col">
-              <q-item v-for="item in thinnableItemsForSelectedThinnable" :key="item.replacedMeshName" clickable @mouseenter="highliteInstance(item.replacedMeshName)">
+              <q-item
+                v-for="item in thinnableItemsForSelectedThinnable"
+                :key="item.replacedMeshName"
+                clickable
+                @mouseenter="highliteInstance(item.replacedMeshName, item.prefabMeshName)"
+              >
                 <q-item-section>
                   {{ item.replacedMeshName }}
                 </q-item-section>
@@ -155,16 +160,14 @@ export default {
       if (!scene) {
         return;
       }
-
       scene.highlitePrefab(name);
     };
 
-    const highliteInstance = (name: string) => {
+    const highliteInstance = (name: string, prefabName: string) => {
       if (!scene) {
         return;
       }
-
-      scene.highliteInstance(name);
+      scene.highliteInstance(name, prefabName);
     };
 
     const thinnableSelected = ref('');
@@ -172,6 +175,7 @@ export default {
 
     const thinnableItemsForSelectedThinnable = computed(() => {
       let ti: {
+        prefabMeshName: string;
         replacedMeshName: string;
         replacedMeshPosition: {
           x: string;
@@ -183,6 +187,7 @@ export default {
         if (key === thinnableSelected.value) {
           ti = value.meshes.map((m) => {
             return {
+              prefabMeshName: value.prefab.name,
               replacedMeshName: m.name,
               replacedMeshPosition: {
                 x: m.getAbsolutePosition()._x.toFixed(4),

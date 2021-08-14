@@ -143,7 +143,7 @@ export class ThinnizatorScene {
     scene.clearColor = new Color4(0, 0, 0, 1);
     const camera = new ArcRotateCamera('cam1', -1.434, 1.046, 70, new Vector3(0, 20, 0), scene);
     this._camera = camera;
-    camera.minZ = 0.01;
+    camera.minZ = 0.1;
     camera.maxZ = 1000;
     camera.setTarget(Vector3.Zero());
     camera.attachControl(this._canvas, true);
@@ -156,7 +156,7 @@ export class ThinnizatorScene {
     this.setupScene();
     this.setupFps();
 
-    this.loadDemo();
+    // this.loadDemo();
     // this.showAxis(20);
 
     scene.onBeforeRenderObservable.add(() => {
@@ -167,6 +167,7 @@ export class ThinnizatorScene {
         const screenWidth = scene.getEngine().getRenderWidth(true);
 
         this._setPosition(this._previewPrefab, 0.1, 0.1, 200, this._camera, invertCameraViewProj, screenWidth);
+        this._previewPrefab.rotation.y += 0.04;
       }
     });
 
@@ -257,6 +258,11 @@ export class ThinnizatorScene {
   }
 
   public previewPrefab(name: string) {
+    const primitiveNameIndex = name.indexOf('_primitive');
+    if (primitiveNameIndex > -1) {
+      name = name.substr(0, primitiveNameIndex);
+    }
+
     const prefabMesh = <Mesh>this._scene.getMeshByName(name) ?? this._scene.getTransformNodeByName(name);
     if (this._previewPrefab) {
       this._previewPrefab.dispose();
@@ -281,7 +287,7 @@ export class ThinnizatorScene {
     const pt = Vector3.TransformCoordinates(p, invertCameraViewProj);
     const qt = Vector3.TransformCoordinates(q, invertCameraViewProj);
 
-    const sizes = this._getBounding(mesh);
+    // const sizes = this._getBounding(mesh);
 
     const d = qt.subtract(pt).length() * 0.4;
 
@@ -321,8 +327,9 @@ export class ThinnizatorScene {
     }
   }
 
-  public highliteInstance(name: string) {
+  public highliteInstance(name: string, prefabName: string) {
     this._thinnizator.highliteInstance(name, this._gui, this._scene);
+    this.previewPrefab(prefabName);
   }
 
   public highlitePrefab(name: string) {
