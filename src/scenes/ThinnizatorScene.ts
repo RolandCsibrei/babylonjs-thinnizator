@@ -2,13 +2,10 @@
 
 import {
   ArcRotateCamera,
-  Color3,
   Engine,
   HemisphericLight,
   Mesh,
-  MeshBuilder,
   PBRMaterial,
-  StandardMaterial,
   Texture,
   TransformNode,
   Vector3,
@@ -18,52 +15,34 @@ import {
   Color4,
   FilesInput,
   Tools,
+  AbstractMesh,
+  Matrix,
 } from '@babylonjs/core';
 import * as GUI from '@babylonjs/gui';
 import '@babylonjs/loaders';
 import '@babylonjs/core/Debug/debugLayer';
 import '@babylonjs/inspector';
 
-import {
-  Thinnizator,
-  ThinnizatorPrefabToMeshesList,
-} from 'src/library/Thinnizator';
+import { Thinnizator, ThinnizatorPrefabToMeshesList } from 'src/library/Thinnizator';
 
-const nodePrefixesToThinnize = [
-  'Cube',
-  'Kiosk',
-  'Circle',
-  'Mesh5310',
-  'Vankus',
-  'Tlaciaren',
-  'Tabula',
-  'HP11_3',
-  'Mesh21293',
-  'Mesh21145',
-  'Box35939',
-  'Mys',
-  'Cylinder',
-  'Mesh4121',
-  'Object5467',
-  'Plans',
-  'Stolik maly',
-  'Vstavane skriny typ1',
-  'Stolík maly',
-  'Plane',
-  'Whiteboard_001',
-  'Vstavana skrina typ1',
-];
+// const nodePrefixesToThinnize = [
+// ];
 
-const matchNodePrefixesPredicate = (node: Mesh) => {
-  if (node && node.name) {
-    const matched =
-      nodePrefixesToThinnize.findIndex((p) => node.name.startsWith(p)) > -1;
-    return matched;
-  }
-  return false;
-};
+// const matchNodePrefixesPredicate = (node: Mesh) => {
+//   if (node && node.name) {
+//     const matched =
+//       nodePrefixesToThinnize.findIndex((p) => node.name.startsWith(p)) > -1;
+//     return matched;
+//   }
+//   return false;
+// };
 
-const allNodesPredicate = (node: Mesh) => {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const matchNodePrefixesPredicate = (node: Mesh) => true;
+
+const THINNIZATOR_ROOT = 'Thinnizator-root';
+
+const allNodesPredicate = (/*node: Mesh*/) => {
   return true;
 };
 
@@ -79,6 +58,8 @@ export class ThinnizatorScene {
   private _showSpawnPoints = false;
   private _showPrefabMarkers = false;
   private _showBadges = false;
+  private _viewMode = 'normal';
+  private _previewPrefab: Mesh | null = null;
 
   private _thinnizator: Thinnizator;
 
@@ -104,15 +85,9 @@ export class ThinnizatorScene {
       },
       null
     );
-    this._filesInput.onProcessFileCallback = (
-      file: File,
-      name: string,
-      extension: string
-    ) => {
-      if (
-        extension.toLowerCase() === 'glb' ||
-        extension.toLowerCase() === 'gltf'
-      ) {
+    this._filesInput.onProcessFileCallback = (file: File, name: string, extension: string) => {
+      if (extension.toLowerCase() === 'glb' || extension.toLowerCase() === 'gltf') {
+        debugger;
         this._scene.dispose();
         this.createScene();
         const file = this._filesInput.filesToLoad[0];
@@ -127,22 +102,34 @@ export class ThinnizatorScene {
 
   private _loadFromFile(file: File) {
     SceneLoader.Append('file:', file, this._scene, (loaded) => {
-      // TODO: to const
-      const newRootNode = new TransformNode('Thinnizator', this._scene);
-      const root = loaded.meshes.find((m) => m.name === '__root__');
-      if (root) {
-        const ch = root.getChildTransformNodes()[0];
-        const sizes = ch.getHierarchyBoundingVectors();
-        const size = {
-          x: sizes.max.x - sizes.min.x,
-          y: sizes.max.y - sizes.min.y,
-          z: sizes.max.z - sizes.min.z,
-        };
-        this._camera.radius = Math.max(Math.max(size.x, size.y), size.z) * 1.2;
-        ch.setParent(newRootNode);
-        root.dispose();
-      }
+      this._preprocessLoadedMesh(loaded.meshes);
     });
+  }
+
+  private _preprocessLoadedMesh(loadedMeshes: AbstractMesh[]) {
+    const root = loadedMeshes.find((m) => m.name === '__root__');
+    if (!root) {
+      return;
+    }
+
+    const newRootNode = this._scene.getTransformNodeByName(THINNIZATOR_ROOT) ?? new TransformNode(THINNIZATOR_ROOT, this._scene);
+    if (root) {
+      const ch = root.getChildTransformNodes()[0];
+      const size = this._getBounding(ch);
+      this._camera.radius = Math.max(Math.max(size.x, size.y), size.z) * 1.2;
+      ch.setParent(newRootNode);
+      root.dispose();
+    }
+  }
+
+  private _getBounding(node: TransformNode) {
+    const sizes = node.getHierarchyBoundingVectors();
+    const size = {
+      x: sizes.max.x - sizes.min.x,
+      y: sizes.max.y - sizes.min.y,
+      z: sizes.max.z - sizes.min.z,
+    };
+    return size;
   }
 
   createScene() {
@@ -160,40 +147,35 @@ export class ThinnizatorScene {
     }
 
     scene.clearColor = new Color4(0, 0, 0, 1);
-    const camera = new ArcRotateCamera(
-      'cam1',
-      -1.434,
-      1.046,
-      70,
-      new Vector3(0, 20, 0),
-      scene
-    );
+    const camera = new ArcRotateCamera('cam1', -1.434, 1.046, 70, new Vector3(0, 20, 0), scene);
     this._camera = camera;
+    camera.minZ = 0.1;
+    camera.maxZ = 1000;
     camera.setTarget(Vector3.Zero());
     camera.attachControl(this._canvas, true);
 
-    const light = new HemisphericLight('light', new Vector3(0, 1, 0), scene);
+    const light = new HemisphericLight('light', new Vector3(0, 1, 0), this._scene);
     light.intensity = 1;
-    camera.maxZ = 10000;
 
-    this._gui = GUI.AdvancedDynamicTexture.CreateFullscreenUI(
-      'UI',
-      true,
-      scene
-    );
-
-    const origin = MeshBuilder.CreateBox(
-      'zero-zero-zero',
-      { size: 1 },
-      this._scene
-    );
-    const originMaterial = new StandardMaterial('origin', this._scene);
-    const originColor = new Color3(1, 1, 0);
-    originMaterial.diffuseColor = originColor;
-    origin.material = originMaterial;
+    this._gui = GUI.AdvancedDynamicTexture.CreateFullscreenUI('UI', true, scene);
 
     this.setupScene();
     this.setupFps();
+
+    // this.loadDemo();
+    // this.showAxis(20);
+
+    scene.onBeforeRenderObservable.add(() => {
+      if (this._previewPrefab) {
+        camera.getViewMatrix();
+
+        const invertCameraViewProj = Matrix.Invert(camera.getTransformationMatrix());
+        const screenWidth = scene.getEngine().getRenderWidth(true);
+
+        this._setPosition(this._previewPrefab, 0.1, 0.1, 200, this._camera, invertCameraViewProj, screenWidth);
+        this._previewPrefab.rotation.y += 0.04;
+      }
+    });
 
     engine.runRenderLoop(() => {
       scene.render();
@@ -202,11 +184,28 @@ export class ThinnizatorScene {
     return scene;
   }
 
+  public resetScene() {
+    const root = this._scene.getTransformNodeByName(THINNIZATOR_ROOT);
+    if (root) {
+      root.dispose();
+    }
+  }
+
+  public loadDemo() {
+    this.resetScene();
+    this._loadDemoModel();
+  }
+
+  private _loadDemoModel() {
+    SceneLoader.ImportMesh('', BASE_URL, 'floor.glb', this._scene, (loadedMeshes) => {
+      this._preprocessLoadedMesh(loadedMeshes);
+    });
+  }
+
   public showInspector() {
     if (!this._scene) {
       return;
     }
-    debugger;
     void this._scene.debugLayer.show({
       overlay: true,
       embedMode: true,
@@ -217,10 +216,14 @@ export class ThinnizatorScene {
     this._loadFromFile(file);
   }
 
+  public reload() {
+    // this._filesInput.reload();
+  }
+
   public check(startNodeId: string | null) {
     // TODO: switch to id
     // const root = this._scene.transformNodes.find((n) => n.id === startNodeId);
-    startNodeId = startNodeId ?? 'Thinnizator';
+    startNodeId = startNodeId ?? THINNIZATOR_ROOT;
     const root = this._scene.transformNodes.find((n) => n.name === startNodeId);
     if (root) {
       const thinnables = this._thinnizator.getThinnables(
@@ -235,25 +238,93 @@ export class ThinnizatorScene {
     return new Map<string, ThinnizatorPrefabToMeshesList>();
   }
 
-  public thinnize(
-    putPrefabsUnderThisNode: TransformNode | string,
-    startNodeId: string | null
-  ) {
+  public thinnize(putPrefabsUnderThisNode: TransformNode | string, startNodeId: string | null) {
     if (typeof putPrefabsUnderThisNode === 'string') {
-      putPrefabsUnderThisNode =
-        this._scene.getTransformNodeByName(putPrefabsUnderThisNode) ??
-        new TransformNode(putPrefabsUnderThisNode, this._scene);
+      putPrefabsUnderThisNode = this._scene.getTransformNodeByName(putPrefabsUnderThisNode) ?? new TransformNode(putPrefabsUnderThisNode, this._scene);
     }
-    startNodeId = startNodeId ?? 'Thinnizator';
+
+    // TODO: switch to id instead of name
+    debugger;
+    startNodeId = startNodeId ?? THINNIZATOR_ROOT;
     const root = this._scene.transformNodes.find((n) => n.name === startNodeId);
     if (root) {
       const thinnizator = new Thinnizator();
-      thinnizator.thInnIze(
-        root,
-        matchNodePrefixesPredicate,
-        putPrefabsUnderThisNode,
-        this._scene
-      );
+      thinnizator.hideBadges(this._gui);
+      thinnizator.thInnIze(root, matchNodePrefixesPredicate, putPrefabsUnderThisNode, this._scene);
+    }
+  }
+
+  private _pointView() {
+    this._scene.meshes.forEach((m) => {
+      if (m.material) {
+        m.material.pointsCloud = true;
+        m.material.pointSize = 1;
+      }
+    });
+  }
+
+  private _normalView() {
+    this._scene.meshes.forEach((m) => {
+      if (m.material) {
+        m.material.pointsCloud = false;
+      }
+    });
+  }
+
+  public previewPrefab(name: string) {
+    //
+    console.log('Preview', name);
+  }
+
+  public previewPrefab2(name: string) {
+    const primitiveNameIndex = name.indexOf('_primitive');
+    if (primitiveNameIndex > -1) {
+      name = name.substr(0, primitiveNameIndex);
+    }
+
+    const prefabMesh = <Mesh>this._scene.getMeshByName(name); //?? this._scene.getTransformNodeByName(name);
+    if (this._previewPrefab) {
+      this._previewPrefab.dispose();
+    }
+
+    if (prefabMesh) {
+      const prefabMeshClone = prefabMesh.clone(`preview-${prefabMesh.name}`, null);
+      this._previewPrefab = prefabMeshClone;
+      // if (prefabMeshClone) {
+      // prefabMeshClone.scaling = new Vector3(40, 40, 40);
+      // }
+    }
+  }
+
+  private _setPosition(mesh: Mesh, fromLeft: number, fromTop: number, meshWidthInPixels: number, camera: ArcRotateCamera, invertCameraViewProj: Matrix, screenWidth: number) {
+    const h = meshWidthInPixels / screenWidth;
+
+    const depth = 1.8;
+    const p = new Vector3(-1, -1, -1 + depth);
+    const q = new Vector3(-1 + 2 * h, -1, -1 + depth);
+
+    const pt = Vector3.TransformCoordinates(p, invertCameraViewProj);
+    const qt = Vector3.TransformCoordinates(q, invertCameraViewProj);
+
+    // const sizes = this._getBounding(mesh);
+
+    const d = qt.subtract(pt).length() * 0.4;
+
+    mesh.scaling = new Vector3(d, d, d);
+
+    p.x = -1 + h * fromLeft + h;
+    p.y = 1 - h * fromTop - h;
+
+    mesh.rotation = camera.rotation;
+    mesh.position = Vector3.TransformCoordinates(p, invertCameraViewProj);
+  }
+
+  public toggleAnalyzerView(viewMode = 'normal') {
+    this._viewMode = viewMode;
+    if (this._viewMode === 'analyzer') {
+      this._pointView();
+    } else {
+      this._normalView();
     }
   }
 
@@ -284,8 +355,23 @@ export class ThinnizatorScene {
     }
   }
 
-  public highliteInstance(name: string) {
+  public highliteInstance(name: string, prefabName: string) {
     this._thinnizator.highliteInstance(name, this._gui, this._scene);
+    this.previewPrefab(prefabName);
+  }
+
+  public highlitePrefab(name: string) {
+    this._thinnizator.highlitePrefab(name, this._gui, this._scene);
+    this.previewPrefab(name);
+  }
+
+  public getSceneInfo() {
+    const allMeshesCount = this._scene.meshes.length;
+    const allVerticesCount = this._scene.getGeometries().reduce((sum, g) => (sum += g.getTotalVertices()), 0);
+    return {
+      allMeshesCount,
+      allVerticesCount,
+    };
   }
 
   setupFps() {
@@ -317,9 +403,7 @@ export class ThinnizatorScene {
   }
 
   getFloorNode(floor: string) {
-    const floorobj = this._scene.transformNodes.find(
-      (m) => m.name === `Floor ${floor} Objects`
-    );
+    const floorobj = this._scene.transformNodes.find((m) => m.name === `Floor ${floor} Objects`);
     return floorobj;
   }
 
