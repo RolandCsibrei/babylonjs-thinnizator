@@ -211,6 +211,7 @@ export default {
 
     const checkScene = () => {
       if (scene) {
+        debugger;
         const thinnables = scene.check(null);
         if (thinnablesList) {
           thinnablesList.value = thinnables;
@@ -222,7 +223,7 @@ export default {
 
     const thinnize = () => {
       if (scene) {
-        scene.thinnize('prefabs');
+        scene.thinnize('prefabs', null);
       }
     };
 

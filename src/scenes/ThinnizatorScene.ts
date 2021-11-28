@@ -63,6 +63,10 @@ const matchNodePrefixesPredicate = (node: Mesh) => {
   return false;
 };
 
+const allNodesPredicate = (node: Mesh) => {
+  return true;
+};
+
 const BASE_URL = 'https://babylonjs.nascor.tech/boxes/';
 
 export class ThinnizatorScene {
@@ -221,7 +225,8 @@ export class ThinnizatorScene {
     if (root) {
       const thinnables = this._thinnizator.getThinnables(
         root,
-        matchNodePrefixesPredicate,
+        // matchNodePrefixesPredicate,
+        allNodesPredicate,
         this._scene
       );
       return thinnables;
@@ -230,14 +235,17 @@ export class ThinnizatorScene {
     return new Map<string, ThinnizatorPrefabToMeshesList>();
   }
 
-  public thinnize(putPrefabsUnderThisNode: TransformNode | string) {
+  public thinnize(
+    putPrefabsUnderThisNode: TransformNode | string,
+    startNodeId: string | null
+  ) {
     if (typeof putPrefabsUnderThisNode === 'string') {
       putPrefabsUnderThisNode =
         this._scene.getTransformNodeByName(putPrefabsUnderThisNode) ??
         new TransformNode(putPrefabsUnderThisNode, this._scene);
     }
-
-    const root = this._scene.transformNodes.find((n) => n.name === 'Building');
+    startNodeId = startNodeId ?? 'Thinnizator';
+    const root = this._scene.transformNodes.find((n) => n.name === startNodeId);
     if (root) {
       const thinnizator = new Thinnizator();
       thinnizator.thInnIze(
